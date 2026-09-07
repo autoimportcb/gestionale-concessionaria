@@ -251,30 +251,16 @@
       `).join('');
     }
 
-async function salvaAppuntamento(e) {
-    e.preventDefault();
-    const titolo = document.getElementById('app-titolo').value;
-    const cliente = document.getElementById('app-cliente').value;
-    const telefono = document.getElementById('app-telefono').value;
-    const dataInput = document.getElementById('data_ora').value;
+    async function salvaAppuntamento(e) {
+      e.preventDefault();
+      const titolo = document.getElementById('app-titolo').value;
+      const cliente = document.getElementById('app-cliente').value;
+      const telefono = document.getElementById('app-telefono').value;
+      const dataInput = document.getElementById('app-data').value; // ID corretto
 
-    // Formattazione corretta del fuso orario locale
-    let data_ora = null;
-    if (dataInput) {
-        const d = new Date(dataInput);
-        const pad = (n) => String(n).padStart(2, '0');
-        const year = d.getFullYear();
-        const month = pad(d.getMonth() + 1);
-        const day = pad(d.getDate());
-        const hours = pad(d.getHours());
-        const minutes = pad(d.getMinutes());
-        const seconds = pad(d.getSeconds());
-        
-        // Genera la stringa locale esatta senza conversioni UTC involontarie
-        data_ora = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-    }
-
-    const note = document.getElementById('app-note').value;
+      // Inviamo la stringa locale diretta senza conversioni UTC errate
+      const data_ora = dataInput ? dataInput + ':00' : null;
+      const note = document.getElementById('app-note').value;
 
       const telegramChatId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || null;
 
