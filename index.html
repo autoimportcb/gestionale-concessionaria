@@ -256,7 +256,8 @@
       const titolo = document.getElementById('app-titolo').value;
       const cliente = document.getElementById('app-cliente').value;
       const telefono = document.getElementById('app-telefono').value;
-      const data_ora = document.getElementById('app-data').value;
+      const dataInput = document.getElementById('data_ora').value;
+      const data_ora = dataInput ? dataInput + ':00+02:00' : null;
       const note = document.getElementById('app-note').value;
 
       const telegramChatId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || null;
