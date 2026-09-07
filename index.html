@@ -39,7 +39,7 @@
     .btn-telegram { background: #0284c7; color: white; }
     .btn-danger { background: #ef4444; color: white; }
     
-    .app-item {
+    .app-item, .client-item {
       background: white; border: 1px solid #e2e8f0; border-left: 4px solid #2563eb;
       padding: 12px; margin-bottom: 10px; border-radius: 6px;
     }
@@ -52,23 +52,50 @@
   </header>
 
   <nav>
-    <button onclick="mostraSezione('home')" class="nav-btn active" id="btn-home">🏠 Dashboard</button>
+    <button onclick="mostraSezione('clienti')" class="nav-btn active" id="btn-clienti">👥 Gestione Clienti</button>
     <button onclick="mostraSezione('appuntamenti')" class="nav-btn" id="btn-appuntamenti">📅 Agenda Appuntamenti</button>
   </nav>
 
-  <!-- SEZIONE DASHBOARD / HOME -->
-  <section id="sezione-home" class="sezione-page">
+  <!-- SEZIONE GESTIONE CLIENTI -->
+  <section id="sezione-clienti" class="sezione-page">
+    <h2>👥 Gestione Clienti</h2>
+    
     <div class="card">
-      <h2>Benvenuto nel Gestionale</h2>
-      <p>Seleziona una voce dal menu in alto per gestire gli appuntamenti o la concessionaria.</p>
+      <h3>Nuovo Cliente</h3>
+      <form id="form-cliente" onsubmit="salvaCliente(event)">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
+          <div>
+            <label>Nome e Cognome</label>
+            <input type="text" id="cli-nome" placeholder="Es. Mario Rossi" required>
+          </div>
+          <div>
+            <label>Telefono</label>
+            <input type="tel" id="cli-telefono" placeholder="Es. 3331234567" required>
+          </div>
+          <div>
+            <label>Email</label>
+            <input type="email" id="cli-email" placeholder="Es. mario@email.it">
+          </div>
+          <div>
+            <label>Auto di Interesse</label>
+            <input type="text" id="cli-auto" placeholder="Es. Fiat Panda / Audi A3">
+          </div>
+        </div>
+        <label>Note Interazione / Trattativa</label>
+        <textarea id="cli-note" rows="2" placeholder="Dettagli sulla trattativa..."></textarea>
+        
+        <button type="submit" class="btn btn-primary">➕ Salva Cliente</button>
+      </form>
     </div>
+
+    <h3>Lista Clienti</h3>
+    <div id="lista-clienti">Caricamento in corso...</div>
   </section>
 
   <!-- SEZIONE APPUNTAMENTI -->
   <section id="sezione-appuntamenti" class="sezione-page" style="display:none;">
     <h2>📅 Gestione Appuntamenti & Promemoria</h2>
     
-    <!-- Form Inserimento -->
     <div class="card">
       <h3>Nuovo Appuntamento</h3>
       <form id="form-appuntamento" onsubmit="salvaAppuntamento(event)">
@@ -91,34 +118,31 @@
           </div>
         </div>
         <label>Note</label>
-        <textarea id="app-note" rows="2" placeholder="Note o dettagli sul veicolo..."></textarea>
+        <textarea id="app-note" rows="2" placeholder="Note o dettagli sull'appuntamento..."></textarea>
         
         <button type="submit" class="btn btn-primary">➕ Salva Appuntamento</button>
       </form>
     </div>
 
-    <!-- Lista Appuntamenti -->
     <h3>Prossimi Appuntamenti</h3>
     <div id="lista-appuntamenti">Caricamento in corso...</div>
   </section>
 
   <script>
-    // Inizializza Telegram WebApp API
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
     }
 
-    // 1. CONFIGURAZIONE SUPABASE
+    // CONFIGURAZIONE SUPABASE
     const SUPABASE_URL = 'https://srhbsdxmmykrfkaetwuw.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyaGJzZHhtbXlrcmZrYWV0d3V3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3OTM2MzQsImV4cCI6MjEwNDM2OTYzNH0.LCSSbmisApSb2hHqb8DW8L19I3gVJMopXaH9hn94BWQ';
-    
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 2. TOKEN BOT TELEGRAM
+    // TOKEN BOT TELEGRAM
     const BOT_TOKEN = '8993906581:AAHjr3mpuDar7gvMgiiVDsqhh0XDd13CQzY';
 
-    // Navigazione Sezioni
+    // NAVIGAZIONE SEZIONI
     function mostraSezione(sezioneId) {
       document.querySelectorAll('.sezione-page').forEach(sec => sec.style.display = 'none');
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -126,12 +150,71 @@
       document.getElementById(`sezione-${sezioneId}`).style.display = 'block';
       document.getElementById(`btn-${sezioneId}`).classList.add('active');
 
-      if (sezioneId === 'appuntamenti') {
-        caricaAppuntamenti();
+      if (sezioneId === 'clienti') caricaClienti();
+      if (sezioneId === 'appuntamenti') caricaAppuntamenti();
+    }
+
+    // --- FUNZIONI GESTIONE CLIENTI ---
+    async function caricaClienti() {
+      const container = document.getElementById('lista-clienti');
+      container.innerHTML = 'Caricamento...';
+
+      const { data, error } = await supabaseClient
+        .from('clienti')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (error) {
+        container.innerHTML = '<p style="color:red;">Errore nel caricamento clienti.</p>';
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p>Nessun cliente registrato.</p>';
+        return;
+      }
+
+      container.innerHTML = data.map(c => `
+        <div class="client-item">
+          <strong>👤 ${c.nome}</strong><br>
+          📞 Telefono: ${c.telefono || 'N/D'} | ✉️ Email: ${c.email || 'N/D'}<br>
+          🚗 Auto Interesse: <strong>${c.auto_interesse || 'Nessuna'}</strong><br>
+          📝 Note: ${c.note || 'Nessuna'}<br>
+          <button onclick="eliminaCliente(${c.id})" class="btn btn-danger" style="margin-top:8px;">
+            🗑️ Elimina Cliente
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function salvaCliente(e) {
+      e.preventDefault();
+      const nome = document.getElementById('cli-nome').value;
+      const telefono = document.getElementById('cli-telefono').value;
+      const email = document.getElementById('cli-email').value;
+      const auto_interesse = document.getElementById('cli-auto').value;
+      const note = document.getElementById('cli-note').value;
+
+      const { error } = await supabaseClient
+        .from('clienti')
+        .insert([{ nome, telefono, email, auto_interesse, note }]);
+
+      if (error) {
+        alert('Errore salvataggio cliente: ' + error.message);
+      } else {
+        alert('Cliente salvato correttamente!');
+        document.getElementById('form-cliente').reset();
+        caricaClienti();
       }
     }
 
-    // Carica gli appuntamenti da Supabase
+    async function eliminaCliente(id) {
+      if(!confirm('Vuoi davvero eliminare questo cliente?')) return;
+      await supabaseClient.from('clienti').delete().eq('id', id);
+      caricaClienti();
+    }
+
+    // --- FUNZIONI GESTIONE APPUNTAMENTI ---
     async function caricaAppuntamenti() {
       const container = document.getElementById('lista-appuntamenti');
       container.innerHTML = 'Caricamento...';
@@ -142,7 +225,7 @@
         .order('data_ora', { ascending: true });
 
       if (error) {
-        container.innerHTML = '<p style="color:red;">Errore nel caricamento degli appuntamenti.</p>';
+        container.innerHTML = '<p style="color:red;">Errore nel caricamento appuntamenti.</p>';
         return;
       }
 
@@ -168,7 +251,6 @@
       `).join('');
     }
 
-    // Salva un nuovo appuntamento
     async function salvaAppuntamento(e) {
       e.preventDefault();
       const titolo = document.getElementById('app-titolo').value;
@@ -184,25 +266,19 @@
         .insert([{ titolo, cliente, telefono, data_ora, note, telegram_chat_id: telegramChatId }]);
 
       if (error) {
-        alert('Errore durante il salvataggio: ' + error.message);
+        alert('Errore salvataggio appuntamento: ' + error.message);
       } else {
-        alert('Appuntamento salvato con successo!');
+        alert('Appuntamento salvato!');
         document.getElementById('form-appuntamento').reset();
         caricaAppuntamenti();
       }
     }
 
-    // Invia notifica diretta tramite Bot Telegram
     async function inviaNotificaTelegram(titolo, cliente, dataOra) {
       const CHAT_ID = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
       if (!CHAT_ID) {
         alert('Apri la Web App dentro Telegram per inviare messaggi alla tua chat!');
-        return;
-      }
-
-      if (!BOT_TOKEN || BOT_TOKEN === 'INSERISCI_QUI_IL_TUO_BOT_TOKEN') {
-        alert('Devi inserire il tuo TOKEN di BotFather nello script del codice!');
         return;
       }
 
@@ -230,12 +306,14 @@
       }
     }
 
-    // Elimina appuntamento
     async function eliminaAppuntamento(id) {
       if(!confirm('Vuoi davvero eliminare questo appuntamento?')) return;
       await supabaseClient.from('appuntamenti').delete().eq('id', id);
       caricaAppuntamenti();
     }
+
+    // Caricamento iniziale
+    caricaClienti();
   </script>
 </body>
 </html>
