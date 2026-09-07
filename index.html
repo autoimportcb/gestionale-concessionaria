@@ -256,10 +256,15 @@
       const titolo = document.getElementById('app-titolo').value;
       const cliente = document.getElementById('app-cliente').value;
       const telefono = document.getElementById('app-telefono').value;
-      const dataInput = document.getElementById('app-data').value; // ID corretto
+      const dataInput = document.getElementById('app-data').value;
 
-      // Inviamo la stringa locale diretta senza conversioni UTC errate
-      const data_ora = dataInput ? dataInput + ':00' : null;
+      // Conversione precisa con offset fuso orario locale espresso in stringa ISO
+      let data_ora = null;
+      if (dataInput) {
+        const d = new Date(dataInput);
+        data_ora = d.toISOString(); // Invia il formato ISO corretto interpretato nativamente
+      }
+
       const note = document.getElementById('app-note').value;
 
       const telegramChatId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || null;
