@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionale Concessionaria</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --border: #cbd5e1;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1, h2 {
+            color: var(--primary);
+            margin-top: 0;
+        }
+
+        .card {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 0.85em;
+        }
+
+        input, select, textarea {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95em;
+            outline: none;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            width: 100%;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+            background: var(--surface);
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .badge {
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+
+        .badge-finanziamento { background: #e0f2fe; color: #0369a1; }
+        .badge-contanti { background: #dcfce7; color: #15803d; }
+        .badge-bonifico { background: #fef3c7; color: #b45309; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏎️ Gestionale Clienti</h1>
+
+    <!-- FORM INSERIMENTO -->
+    <div class="card">
+        <h2>Nuovo Cliente</h2>
+        <form id="clientForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Data Visita *</label>
+                    <input type="date" id="data" required>
+                </div>
+                <div class="form-group">
+                    <label>Nome e Cognome *</label>
+                    <input type="text" id="nominativo" placeholder="Es. Mario Rossi" required>
+                </div>
+                <div class="form-group">
+                    <label>Telefono *</label>
+                    <input type="tel" id="telefono" placeholder="333 1234567" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="mario@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Auto Richiesta *</label>
+                    <input type="text" id="richiesta" placeholder="Es. Audi A3 2021" required>
+                </div>
+                <div class="form-group">
+                    <label>Pagamento</label>
+                    <select id="pagamento">
+                        <option value="Finanziamento">Finanziamento</option>
+                        <option value="Bonifico">Bonifico</option>
+                        <option value="Contanti">Contanti</option>
+                        <option value="Da Valutare">Da Valutare</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Permuta Usato</label>
+                    <select id="permuta" onchange="togglePermuta()">
+                        <option value="No">No</option>
+                        <option value="Sì">Sì</option>
+                    </select>
+                </div>
+                <div class="form-group" id="groupDettaglioPermuta" style="display:none;">
+                    <label>Dettagli Permuta</label>
+                    <input type="text" id="dettaglio_permuta" placeholder="Es. Golf 7, 2017, 120k km">
+                </div>
+                <div class="form-group full-width">
+                    <label>Note / Trattativa</label>
+                    <textarea id="note" rows="2" placeholder="Note sulla trattativa..."></textarea>
+                </div>
+            </div>
+            <button type="submit" id="saveBtn">Salva Cliente nel Cloud</button>
+        </form>
+    </div>
+
+    <!-- TABELLA CLIENTI -->
+    <div class="card">
+        <h2>Clienti Registrati</h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Cliente</th>
+                        <th>Contatti</th>
+                        <th>Richiesta</th>
+                        <th>Pagamento</th>
+                        <th>Permuta</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="7" style="text-align:center;">Caricamento in corso...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Inizializzazione Telegram WebApp
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+    }
+
+    // 2. CONFIGURAZIONE SUPABASE
+const SUPABASE_URL = 'https://srhbsdxmmykrfkaetwuw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyaGJzZHhtbXlrcmZrYWV0d3V3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3OTM2MzQsImV4cCI6MjEwNDM2OTYzNH0.LCSSbmisApSb2hHqb8DW8L19I3gVJMopXaH9hn94BWQ';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Imposta data odierna di default
+    document.getElementById('data').valueAsDate = new Date();
+
+    function togglePermuta() {
+        const permuta = document.getElementById('permuta').value;
+        document.getElementById('groupDettaglioPermuta').style.display = permuta === 'Sì' ? 'flex' : 'none';
+    }
+
+    // Carica dati dal Database Cloud
+    async function loadClients() {
+        const { data, error } = await supabase
+            .from('clienti')
+            .select('*')
+            .order('id', { ascending: false });
+
+        if (error) {
+            console.error('Errore nel recupero dati:', error);
+            return;
+        }
+
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nessun cliente registrato.</td></tr>';
+            return;
+        }
+
+        data.forEach(c => {
+            const badgeClass = c.pagamento === 'Finanziamento' ? 'badge-finanziamento' :
+                               c.pagamento === 'Contanti' ? 'badge-contanti' : 'badge-bonifico';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${c.data || '-'}</td>
+                    <td><b>${escapeHtml(c.nominativo || '')}</b></td>
+                    <td>📞 ${escapeHtml(c.telefono || '')}<br><small>${escapeHtml(c.email || '')}</small></td>
+                    <td>${escapeHtml(c.richiesta || '')}</td>
+                    <td><span class="badge ${badgeClass}">${c.pagamento || '-'}</span></td>
+                    <td>${c.permuta === 'Sì' ? '✅ ' + escapeHtml(c.dettaglio_permuta || '') : '❌ No'}</td>
+                    <td><small>${escapeHtml(c.note || '-')}</small></td>
+                </tr>
+            `;
+        });
+    }
+
+    // Salvataggio nuovo cliente
+    document.getElementById('clientForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        btn.innerText = 'Salvataggio in corso...';
+
+        const newClient = {
+            data: document.getElementById('data').value,
+            nominativo: document.getElementById('nominativo').value,
+            telefono: document.getElementById('telefono').value,
+            email: document.getElementById('email').value || '-',
+            richiesta: document.getElementById('richiesta').value,
+            pagamento: document.getElementById('pagamento').value,
+            permuta: document.getElementById('permuta').value,
+            dettaglio_permuta: document.getElementById('dettaglio_permuta').value || '-',
+            note: document.getElementById('note').value || '-'
+        };
+
+        const { error } = await supabase.from('clienti').insert([newClient]);
+
+        if (error) {
+            alert('Errore durante il salvataggio: ' + error.message);
+        } else {
+            alert('Cliente salvato con successo!');
+            document.getElementById('clientForm').reset();
+            document.getElementById('data').valueAsDate = new Date();
+            togglePermuta();
+            loadClients();
+        }
+
+        btn.disabled = false;
+        btn.innerText = 'Salva Cliente nel Cloud';
+    });
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+    }
+
+    // Caricamento iniziale
+    loadClients();
+</script>
+
+</body>
+</html>
