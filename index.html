@@ -4,324 +4,724 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestionale Concessionaria</title>
-  
-  <!-- Script Telegram WebApp API -->
+  <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Script Supabase Client -->
+  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <style>
-    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { margin: 0; padding: 15px; background-color: #f1f5f9; color: #334155; }
-    
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    h1 { font-size: 1.5rem; margin: 0; color: #0f172a; }
-    
-    nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
-    .nav-btn {
-      padding: 8px 16px; border: none; background: #e2e8f0; border-radius: 6px;
-      cursor: pointer; font-weight: 600; white-space: nowrap; color: #475569;
+    :root {
+      --bg-color: #f4f6f8;
+      --card-bg: #ffffff;
+      --primary: #0088cc;
+      --primary-hover: #006699;
+      --text: #333333;
+      --text-muted: #666666;
+      --border: #e0e0e0;
+      --success: #28a745;
+      --danger: #dc3545;
     }
-    .nav-btn.active { background: #2563eb; color: white; }
-
-    .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; }
-    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+      margin: 0;
+      padding: 12px;
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 10px;
+      background: #e4e8ec;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      text-align: center;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+    h2, h3, h4 {
+      margin-top: 0;
+      color: var(--text);
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-muted);
+    }
     input, select, textarea {
-      width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 10px;
-      border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
     }
-    
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+    .form-row .form-group {
+      flex: 1;
+    }
     .btn {
-      padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer;
-      font-weight: 600; font-size: 0.9rem; transition: background 0.2s;
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
     }
-    .btn-primary { background: #2563eb; color: white; }
-    .btn-telegram { background: #0284c7; color: white; }
-    .btn-danger { background: #ef4444; color: white; }
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+    .btn-excel {
+      background: #1d6f42;
+    }
+    .btn-secondary {
+      background: #6c757d;
+      margin-top: 6px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .badge-disponibile { background: #e3f2fd; color: #0d47a1; }
+    .badge-prenotata { background: #fff3cd; color: #856404; }
+    .badge-venduta { background: #d4edda; color: #155724; }
     
-    .app-item, .client-item {
-      background: white; border: 1px solid #e2e8f0; border-left: 4px solid #2563eb;
-      padding: 12px; margin-bottom: 10px; border-radius: 6px;
+    .table-container {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f8f9fa;
+    }
+    .text-success { color: var(--success); font-weight: bold; }
+    .text-danger { color: var(--danger); font-weight: bold; }
+    .item-card {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .item-card:last-child {
+      border-bottom: none;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>🚗 Concessionaria</h1>
-  </header>
+  <!-- Menu Navigazione -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('appuntamenti')">📅 Agenda</button>
+    <button class="tab-btn" onclick="switchTab('clienti')">👥 Clienti</button>
+    <button class="tab-btn" onclick="switchTab('veicoli')">🚘 Veicoli & Margini</button>
+    <button class="tab-btn" onclick="switchTab('commercialista')">📊 Prima Nota Excel</button>
+  </div>
 
-  <nav>
-    <button onclick="mostraSezione('clienti')" class="nav-btn active" id="btn-clienti">👥 Gestione Clienti</button>
-    <button onclick="mostraSezione('appuntamenti')" class="nav-btn" id="btn-appuntamenti">📅 Agenda Appuntamenti</button>
-  </nav>
-
-  <!-- SEZIONE GESTIONE CLIENTI -->
-  <section id="sezione-clienti" class="sezione-page">
-    <h2>👥 Gestione Clienti</h2>
-    
+  <!-- TAB 1: APPUNTAMENTI & PROMEMORIA -->
+  <div id="tab-appuntamenti" class="tab-content active">
     <div class="card">
-      <h3>Nuovo Cliente</h3>
-      <form id="form-cliente" onsubmit="salvaCliente(event)">
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
-          <div>
-            <label>Nome e Cognome</label>
-            <input type="text" id="cli-nome" placeholder="Es. Mario Rossi" required>
+      <h2>Nuovo Appuntamento</h2>
+      <form id="form-appuntamento">
+        <div class="form-group">
+          <label>Titolo / Oggetto *</label>
+          <input type="text" id="app-titolo" required placeholder="Es. Visione Audi A3 - Sig. Rossi">
+        </div>
+        <div class="form-group">
+          <label>Data e Ora *</label>
+          <input type="datetime-local" id="app-data" required>
+        </div>
+        <div class="form-group">
+          <label>Cliente Collegato (Opzionale)</label>
+          <select id="app-cliente-id"></select>
+        </div>
+        <div class="form-group">
+          <label>Note / Dettagli</label>
+          <textarea id="app-note" rows="2" placeholder="Note aggiuntive..."></textarea>
+        </div>
+        <button type="submit" class="btn">Salva Appuntamento</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Prossimi Appuntamenti</h3>
+      <div id="lista-appuntamenti">Caricamento in corso...</div>
+    </div>
+  </div>
+
+  <!-- TAB 2: ANAGRAFICA CLIENTI -->
+  <div id="tab-clienti" class="tab-content">
+    <div class="card">
+      <h2>Nuovo Cliente</h2>
+      <form id="form-cliente">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome e Cognome / Rag. Soc. *</label>
+            <input type="text" id="c-nome" required placeholder="Mario Rossi">
           </div>
-          <div>
+          <div class="form-group">
             <label>Telefono</label>
-            <input type="tel" id="cli-telefono" placeholder="Es. 3331234567" required>
+            <input type="tel" id="c-telefono" placeholder="333 1234567">
           </div>
-          <div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Codice Fiscale / P.IVA</label>
+            <input type="text" id="c-cf" placeholder="RSSMRA80A01H501U">
+          </div>
+          <div class="form-group">
             <label>Email</label>
-            <input type="email" id="cli-email" placeholder="Es. mario@email.it">
-          </div>
-          <div>
-            <label>Auto di Interesse</label>
-            <input type="text" id="cli-auto" placeholder="Es. Fiat Panda / Audi A3">
+            <input type="email" id="c-email" placeholder="mario@gmail.com">
           </div>
         </div>
-        <label>Note Interazione / Trattativa</label>
-        <textarea id="cli-note" rows="2" placeholder="Dettagli sulla trattativa..."></textarea>
-        
-        <button type="submit" class="btn btn-primary">➕ Salva Cliente</button>
+        <div class="form-group">
+          <label>Note Cliente</label>
+          <input type="text" id="c-note" placeholder="Es. Cerca SUV diesel sotto i 15.000€">
+        </div>
+        <button type="submit" class="btn">Salva Cliente</button>
       </form>
     </div>
 
-    <h3>Lista Clienti</h3>
-    <div id="lista-clienti">Caricamento in corso...</div>
-  </section>
-
-  <!-- SEZIONE APPUNTAMENTI -->
-  <section id="sezione-appuntamenti" class="sezione-page" style="display:none;">
-    <h2>📅 Gestione Appuntamenti & Promemoria</h2>
-    
     <div class="card">
-      <h3>Nuovo Appuntamento</h3>
-      <form id="form-appuntamento" onsubmit="salvaAppuntamento(event)">
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
-          <div>
-            <label>Titolo</label>
-            <input type="text" id="app-titolo" placeholder="Es. Test Drive Panda" required>
+      <h3>Anagrafica Clienti</h3>
+      <div id="lista-clienti">Caricamento clienti...</div>
+    </div>
+  </div>
+
+  <!-- TAB 3: VEICOLI & MARGINI -->
+  <div id="tab-veicoli" class="tab-content">
+    <div class="card">
+      <h2>Inserisci Nuovo Veicolo</h2>
+      <form id="form-veicolo">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Marca *</label>
+            <input type="text" id="v-marca" required placeholder="Es. Audi">
           </div>
-          <div>
-            <label>Cliente</label>
-            <input type="text" id="app-cliente" placeholder="Nome Cliente" required>
-          </div>
-          <div>
-            <label>Telefono</label>
-            <input type="tel" id="app-telefono" placeholder="Telefono Cliente">
-          </div>
-          <div>
-            <label>Data e Ora</label>
-            <input type="datetime-local" id="app-data" required>
+          <div class="form-group">
+            <label>Modello *</label>
+            <input type="text" id="v-modello" required placeholder="Es. A3 2.0 TDI">
           </div>
         </div>
-        <label>Note</label>
-        <textarea id="app-note" rows="2" placeholder="Note o dettagli sull'appuntamento..."></textarea>
-        
-        <button type="submit" class="btn btn-primary">➕ Salva Appuntamento</button>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Targa</label>
+            <input type="text" id="v-targa" placeholder="AB123CD">
+          </div>
+          <div class="form-group">
+            <label>Telaio (VIN)</label>
+            <input type="text" id="v-telaio" placeholder="WAUZZZ...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Km</label>
+            <input type="number" id="v-km" value="0">
+          </div>
+          <div class="form-group">
+            <label>Anno</label>
+            <input type="number" id="v-anno" placeholder="2020">
+          </div>
+          <div class="form-group">
+            <label>Colore</label>
+            <input type="text" id="v-colore" placeholder="Nero">
+          </div>
+        </div>
+
+        <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+        <h4>Dati Acquisto (Ingresso)</h4>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Data Acquisto</label>
+            <input type="date" id="v-data-acq">
+          </div>
+          <div class="form-group">
+            <label>Prezzo Acquisto (€) *</label>
+            <input type="number" step="0.01" id="v-prezzo-acq" required value="0">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fornitore (Nome/Rag. Soc)</label>
+            <input type="text" id="v-fornitore-nome" placeholder="Es. Privato / Concessionaria X">
+          </div>
+          <div class="form-group">
+            <label>Fornitore CF / P.IVA</label>
+            <input type="text" id="v-fornitore-cf" placeholder="Codice Fiscale o P.IVA">
+          </div>
+        </div>
+
+        <button type="submit" class="btn">Registra Veicolo</button>
       </form>
     </div>
 
-    <h3>Prossimi Appuntamenti</h3>
-    <div id="lista-appuntamenti">Caricamento in corso...</div>
-  </section>
+    <!-- Modulo Aggiunta Spesa Ripristino -->
+    <div class="card">
+      <h3>Aggiungi Spesa / Ripristino su Auto</h3>
+      <form id="form-costo">
+        <div class="form-group">
+          <label>Seleziona Veicolo</label>
+          <select id="costo-veicolo-id" required></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Categoria</label>
+            <select id="costo-categoria">
+              <option value="Trasporto">Trasporto / Bisarca</option>
+              <option value="Meccanica">Meccanica / Tagliando</option>
+              <option value="Carrozzeria">Carrozzeria</option>
+              <option value="Lavaggio">Lavaggio / Dettagliatura</option>
+              <option value="Passaggio">Passaggio / Minipassaggio</option>
+              <option value="Altro">Altro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Importo (€)</label>
+            <input type="number" step="0.01" id="costo-importo" required placeholder="0.00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Descrizione Lavoro / Dettaglio</label>
+          <input type="text" id="costo-descrizione" placeholder="Es. Sostituzione pastiglie e olio">
+        </div>
+        <button type="submit" class="btn btn-secondary">Registra Spesa Ripristino</button>
+      </form>
+    </div>
+
+    <!-- Modulo Registrazione Vendita -->
+    <div class="card">
+      <h3>Registra Vendita Veicolo</h3>
+      <form id="form-vendita">
+        <div class="form-group">
+          <label>Seleziona Veicolo da Chiudere</label>
+          <select id="vendita-veicolo-id" required></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Data Vendita</label>
+            <input type="date" id="v-data-vendita" required>
+          </div>
+          <div class="form-group">
+            <label>Cliente Acquirente</label>
+            <input type="text" id="v-acq-nome" required placeholder="Nome e Cognome">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cliente CF / P.IVA</label>
+            <input type="text" id="v-acq-cf" placeholder="Codice Fiscale">
+          </div>
+          <div class="form-group">
+            <label>Telefono Cliente</label>
+            <input type="text" id="v-acq-tel" placeholder="Cellulare">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prezzo UFFICIALE (€)</label>
+            <input type="number" step="0.01" id="v-prezzo-uff" required placeholder="Prezzo in Fattura">
+          </div>
+          <div class="form-group">
+            <label>Prezzo REALE (€)</label>
+            <input type="number" step="0.01" id="v-prezzo-reale" required placeholder="Importo Reale Incassato">
+          </div>
+        </div>
+        <button type="submit" class="btn" style="background:#28a745;">Conferma Vendita e Calcola Margine</button>
+      </form>
+    </div>
+
+    <!-- Registro Parco Auto -->
+    <div class="card">
+      <h3>Registro Parco Auto & Margini</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Stato</th>
+              <th>Veicolo / Targa</th>
+              <th>Acquisto</th>
+              <th>Spese</th>
+              <th>Investito</th>
+              <th>Prezzo Reale</th>
+              <th>Margine Reale</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-veicoli">
+            <tr><td colspan="7">Caricamento parco auto...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: PRIMA NOTA PER COMMERCIALISTA -->
+  <div id="tab-commercialista" class="tab-content">
+    <div class="card">
+      <h2>Esportazione Prima Nota (Excel / CSV)</h2>
+      <p>Seleziona il mese e l'anno per generare il prospetto contabile da inviare al commercialista.</p>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mese</label>
+          <select id="exp-mese">
+            <option value="1">Gennaio</option>
+            <option value="2">Febbraio</option>
+            <option value="3">Marzo</option>
+            <option value="4">Aprile</option>
+            <option value="5">Maggio</option>
+            <option value="6">Giugno</option>
+            <option value="7">Luglio</option>
+            <option value="8">Agosto</option>
+            <option value="9">Settembre</option>
+            <option value="10">Ottobre</option>
+            <option value="11">Novembre</option>
+            <option value="12">Dicembre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Anno</label>
+          <input type="number" id="exp-anno" value="2026">
+        </div>
+      </div>
+
+      <button onclick="esportaPrimaNotaExcel()" class="btn btn-excel">📥 Scarica File Excel per Commercialista</button>
+    </div>
+  </div>
 
   <script>
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
-    }
-
-    // CONFIGURAZIONE SUPABASE
-    const SUPABASE_URL = 'https://srhbsdxmmykrfkaetwuw.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyaGJzZHhtbXlrcmZrYWV0d3V3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3OTM2MzQsImV4cCI6MjEwNDM2OTYzNH0.LCSSbmisApSb2hHqb8DW8L19I3gVJMopXaH9hn94BWQ';
+    // Configurazione Supabase
+    const SUPABASE_URL = "https://TUO_PROJECT_ID.supabase.co";
+    const SUPABASE_KEY = "LA_TUA_CHIAVE_ANONIMA_SUPABASE";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // TOKEN BOT TELEGRAM
-    const BOT_TOKEN = '8993906581:AAHjr3mpuDar7gvMgiiVDsqhh0XDd13CQzY';
+    // Inizializzazione Telegram WebApp
+    const tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) tg.expand();
 
-    // NAVIGAZIONE SEZIONI
-    function mostraSezione(sezioneId) {
-      document.querySelectorAll('.sezione-page').forEach(sec => sec.style.display = 'none');
-      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    // Imposta data odierna e carica tutti i dati
+    document.addEventListener("DOMContentLoaded", () => {
+      const today = new Date().toISOString().split('T')[0];
+      if(document.getElementById('v-data-acq')) document.getElementById('v-data-acq').value = today;
+      if(document.getElementById('v-data-vendita')) document.getElementById('v-data-vendita').value = today;
+      if(document.getElementById('exp-mese')) document.getElementById('exp-mese').value = new Date().getMonth() + 1;
+      if(document.getElementById('exp-anno')) document.getElementById('exp-anno').value = new Date().getFullYear();
       
-      document.getElementById(`sezione-${sezioneId}`).style.display = 'block';
-      document.getElementById(`btn-${sezioneId}`).classList.add('active');
-
-      if (sezioneId === 'clienti') caricaClienti();
-      if (sezioneId === 'appuntamenti') caricaAppuntamenti();
-    }
-
-    // --- FUNZIONI GESTIONE CLIENTI ---
-    async function caricaClienti() {
-      const container = document.getElementById('lista-clienti');
-      container.innerHTML = 'Caricamento...';
-
-      const { data, error } = await supabaseClient
-        .from('clienti')
-        .select('*')
-        .order('id', { ascending: false });
-
-      if (error) {
-        container.innerHTML = '<p style="color:red;">Errore nel caricamento clienti.</p>';
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        container.innerHTML = '<p>Nessun cliente registrato.</p>';
-        return;
-      }
-
-      container.innerHTML = data.map(c => `
-        <div class="client-item">
-          <strong>👤 ${c.nome}</strong><br>
-          📞 Telefono: ${c.telefono || 'N/D'} | ✉️ Email: ${c.email || 'N/D'}<br>
-          🚗 Auto Interesse: <strong>${c.auto_interesse || 'Nessuna'}</strong><br>
-          📝 Note: ${c.note || 'Nessuna'}<br>
-          <button onclick="eliminaCliente(${c.id})" class="btn btn-danger" style="margin-top:8px;">
-            🗑️ Elimina Cliente
-          </button>
-        </div>
-      `).join('');
-    }
-
-    async function salvaCliente(e) {
-      e.preventDefault();
-      const nome = document.getElementById('cli-nome').value;
-      const telefono = document.getElementById('cli-telefono').value;
-      const email = document.getElementById('cli-email').value;
-      const auto_interesse = document.getElementById('cli-auto').value;
-      const note = document.getElementById('cli-note').value;
-
-      const { error } = await supabaseClient
-        .from('clienti')
-        .insert([{ nome, telefono, email, auto_interesse, note }]);
-
-      if (error) {
-        alert('Errore salvataggio cliente: ' + error.message);
-      } else {
-        alert('Cliente salvato correttamente!');
-        document.getElementById('form-cliente').reset();
-        caricaClienti();
-      }
-    }
-
-    async function eliminaCliente(id) {
-      if(!confirm('Vuoi davvero eliminare questo cliente?')) return;
-      await supabaseClient.from('clienti').delete().eq('id', id);
+      caricaAppuntamenti();
       caricaClienti();
+      caricaVeicoli();
+    });
+
+    // Navigazione Tab
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(`tab-${tabName}`).classList.add('active');
     }
 
-    // --- FUNZIONI GESTIONE APPUNTAMENTI ---
-    async function caricaAppuntamenti() {
-      const container = document.getElementById('lista-appuntamenti');
-      container.innerHTML = 'Caricamento...';
-
-      const { data, error } = await supabaseClient
-        .from('appuntamenti')
-        .select('*')
-        .order('data_ora', { ascending: true });
-
-      if (error) {
-        container.innerHTML = '<p style="color:red;">Errore nel caricamento appuntamenti.</p>';
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        container.innerHTML = '<p>Nessun appuntamento in programma.</p>';
-        return;
-      }
-
-      container.innerHTML = data.map(app => `
-        <div class="app-item">
-          <strong>${app.titolo}</strong> — <em>${new Date(app.data_ora).toLocaleString('it-IT')}</em><br>
-          👤 Cliente: <strong>${app.cliente}</strong> (${app.telefono || 'N/D'})<br>
-          📝 Note: ${app.note || 'Nessuna'}<br>
-          <div style="margin-top:10px; display:flex; gap:10px;">
-            <button onclick="inviaNotificaTelegram('${app.titolo}', '${app.cliente}', '${app.data_ora}')" class="btn btn-telegram">
-              📲 Promemoria Telegram
-            </button>
-            <button onclick="eliminaAppuntamento(${app.id})" class="btn btn-danger">
-              🗑️ Elimina
-            </button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function salvaAppuntamento(e) {
+    // --- APPUNTAMENTI ---
+    document.getElementById('form-appuntamento').addEventListener('submit', async (e) => {
       e.preventDefault();
       const titolo = document.getElementById('app-titolo').value;
-      const cliente = document.getElementById('app-cliente').value;
-      const telefono = document.getElementById('app-telefono').value;
-      const dataInput = document.getElementById('app-data').value;
-
-      // Conversione precisa con offset fuso orario locale espresso in stringa ISO
-      let data_ora = null;
-      if (dataInput) {
-        const d = new Date(dataInput);
-        data_ora = d.toISOString(); // Invia il formato ISO corretto interpretato nativamente
-      }
-
+      const data_ora = document.getElementById('app-data').value;
+      const cliente_id = document.getElementById('app-cliente-id').value || null;
       const note = document.getElementById('app-note').value;
-
-      const telegramChatId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || null;
 
       const { error } = await supabaseClient
         .from('appuntamenti')
-        .insert([{ titolo, cliente, telefono, data_ora, note, telegram_chat_id: telegramChatId }]);
+        .insert([{ titolo, data_ora, cliente_id, note }]);
 
       if (error) {
-        alert('Errore salvataggio appuntamento: ' + error.message);
+        alert("Errore salvataggio appuntamento: " + error.message);
       } else {
-        alert('Appuntamento salvato!');
+        alert("Appuntamento salvato con successo!");
         document.getElementById('form-appuntamento').reset();
         caricaAppuntamenti();
       }
-    }
+    });
 
-    async function inviaNotificaTelegram(titolo, cliente, dataOra) {
-      const CHAT_ID = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    async function caricaAppuntamenti() {
+      const { data, error } = await supabaseClient
+        .from('appuntamenti')
+        .select('*, clienti(nome, telefono)')
+        .gte('data_ora', new Date().toISOString())
+        .order('data_ora', { ascending: true });
 
-      if (!CHAT_ID) {
-        alert('Apri la Web App dentro Telegram per inviare messaggi alla tua chat!');
+      const container = document.getElementById('lista-appuntamenti');
+      if (error || !data || data.length === 0) {
+        container.innerHTML = "<p>Nessun appuntamento futuro in programma.</p>";
         return;
       }
 
-      const testo = `🔔 *PROMEMORIA APPUNTAMENTO*\n\n📌 *${titolo}*\n👤 Cliente: *${cliente}*\n📅 Data/Ora: *${new Date(dataOra).toLocaleString('it-IT')}*`;
+      container.innerHTML = data.map(a => `
+        <div class="item-card">
+          <strong>${new Date(a.data_ora).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</strong> - ${a.titolo}
+          ${a.clienti ? `<br><small>👤 Cliente: ${a.clienti.nome} (${a.clienti.telefono || 'N/D'})</small>` : ''}
+          ${a.note ? `<br><small style="color:#666">📝 ${a.note}</small>` : ''}
+        </div>
+      `).join('');
+    }
 
-      try {
-        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: CHAT_ID,
-            text: testo,
-            parse_mode: 'Markdown'
-          })
-        });
+    // --- ANAGRAFICA CLIENTI ---
+    document.getElementById('form-cliente').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nome = document.getElementById('c-nome').value;
+      const telefono = document.getElementById('c-telefono').value;
+      const codice_fiscale = document.getElementById('c-cf').value;
+      const email = document.getElementById('c-email').value;
+      const note = document.getElementById('c-note').value;
 
-        if (res.ok) {
-          alert('Promemoria inviato sulla tua chat Telegram!');
-        } else {
-          alert('Errore durante l\'invio del messaggio.');
-        }
-      } catch (err) {
-        console.error(err);
-        alert('Errore di connessione a Telegram.');
+      const { error } = await supabaseClient
+        .from('clienti')
+        .insert([{ nome, telefono, codice_fiscale, email, note }]);
+
+      if (error) {
+        alert("Errore salvataggio cliente: " + error.message);
+      } else {
+        alert("Cliente salvato correttamente!");
+        document.getElementById('form-cliente').reset();
+        caricaClienti();
       }
+    });
+
+    async function caricaClienti() {
+      const { data, error } = await supabaseClient
+        .from('clienti')
+        .select('*')
+        .order('nome', { ascending: true });
+
+      const container = document.getElementById('lista-clienti');
+      const selectClienteApp = document.getElementById('app-cliente-id');
+
+      if (error || !data) {
+        container.innerHTML = "<p>Nessun cliente in anagrafica.</p>";
+        return;
+      }
+
+      // Popola select cliente negli appuntamenti
+      selectClienteApp.innerHTML = '<option value="">-- Nessun Cliente collegato --</option>';
+      selectClienteApp.innerHTML += data.map(c => `<option value="${c.id}">${c.nome} ${c.telefono ? '('+c.telefono+')' : ''}</option>`).join('');
+
+      // Renderizza lista clienti
+      container.innerHTML = data.map(c => `
+        <div class="item-card">
+          <strong>👤 ${c.nome}</strong> ${c.telefono ? ` - 📞 ${c.telefono}` : ''}
+          ${c.codice_fiscale ? `<br><small>CF/P.IVA: ${c.codice_fiscale}</small>` : ''}
+          ${c.email ? `<br><small>✉️ ${c.email}</small>` : ''}
+          ${c.note ? `<br><small style="color:#666">Note: ${c.note}</small>` : ''}
+        </div>
+      `).join('');
     }
 
-    async function eliminaAppuntamento(id) {
-      if(!confirm('Vuoi davvero eliminare questo appuntamento?')) return;
-      await supabaseClient.from('appuntamenti').delete().eq('id', id);
-      caricaAppuntamenti();
+    // --- VEICOLI & MARGINI ---
+    document.getElementById('form-veicolo').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const veicolo = {
+        marca: document.getElementById('v-marca').value,
+        modello: document.getElementById('v-modello').value,
+        targa: document.getElementById('v-targa').value.toUpperCase(),
+        telaio: document.getElementById('v-telaio').value,
+        km: parseInt(document.getElementById('v-km').value) || 0,
+        anno: parseInt(document.getElementById('v-anno').value) || null,
+        colore: document.getElementById('v-colore').value,
+        data_acquisto: document.getElementById('v-data-acq').value,
+        prezzo_acquisto: parseFloat(document.getElementById('v-prezzo-acq').value) || 0,
+        fornitore_nome: document.getElementById('v-fornitore-nome').value,
+        fornitore_cf_piva: document.getElementById('v-fornitore-cf').value,
+        stato_vendita: 'DISPONIBILE'
+      };
+
+      const { error } = await supabaseClient.from('veicoli').insert([veicolo]);
+
+      if (error) {
+        alert("Errore salvataggio veicolo: " + error.message);
+      } else {
+        alert("Veicolo salvato nel parco auto!");
+        document.getElementById('form-veicolo').reset();
+        caricaVeicoli();
+      }
+    });
+
+    // Registra Spesa / Ripristino
+    document.getElementById('form-costo').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const veicolo_id = document.getElementById('costo-veicolo-id').value;
+      const categoria = document.getElementById('costo-categoria').value;
+      const importo = parseFloat(document.getElementById('costo-importo').value);
+      const descrizione = document.getElementById('costo-descrizione').value;
+
+      const { error } = await supabaseClient.from('costi_veicolo').insert([{
+        veicolo_id, categoria, importo, descrizione
+      }]);
+
+      if (error) {
+        alert("Errore salvataggio spesa: " + error.message);
+      } else {
+        alert("Spesa registrata correttamente!");
+        document.getElementById('form-costo').reset();
+        caricaVeicoli();
+      }
+    });
+
+    // Registra Vendita Auto
+    document.getElementById('form-vendita').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('vendita-veicolo-id').value;
+      const data_vendita = document.getElementById('v-data-vendita').value;
+      const acquirente_nome = document.getElementById('v-acq-nome').value;
+      const acquirente_cf = document.getElementById('v-acq-cf').value;
+      const acquirente_telefono = document.getElementById('v-acq-tel').value;
+      const prezzo_vendita_ufficiale = parseFloat(document.getElementById('v-prezzo-uff').value);
+      const prezzo_vendita_reale = parseFloat(document.getElementById('v-prezzo-reale').value);
+
+      const { error } = await supabaseClient.from('veicoli').update({
+        stato_vendita: 'VENDUTA',
+        data_vendita,
+        acquirente_nome,
+        acquirente_cf,
+        acquirente_telefono,
+        prezzo_vendita_ufficiale,
+        prezzo_vendita_reale
+      }).eq('id', id);
+
+      if (error) {
+        alert("Errore registrazione vendita: " + error.message);
+      } else {
+        alert("Vendita registrata con successo!");
+        document.getElementById('form-vendita').reset();
+        caricaVeicoli();
+      }
+    });
+
+    async function caricaVeicoli() {
+      const { data, error } = await supabaseClient
+        .from('vista_veicoli_margini')
+        .select('*')
+        .order('id', { ascending: false });
+
+      const tbody = document.getElementById('tbody-veicoli');
+      const selectCosti = document.getElementById('costo-veicolo-id');
+      const selectVendita = document.getElementById('vendita-veicolo-id');
+
+      if (error || !data) {
+        tbody.innerHTML = "<tr><td colspan='7'>Errore caricamento dati.</td></tr>";
+        return;
+      }
+
+      selectCosti.innerHTML = '<option value="">-- Seleziona Auto --</option>';
+      selectVendita.innerHTML = '<option value="">-- Seleziona Auto --</option>';
+
+      tbody.innerHTML = data.map(v => {
+        if (v.stato_vendita !== 'VENDUTA') {
+          const optionText = `${v.marca} ${v.modello} (${v.targa || 'Senza Targa'})`;
+          selectCosti.innerHTML += `<option value="${v.id}">${optionText}</option>`;
+          selectVendita.innerHTML += `<option value="${v.id}">${optionText}</option>`;
+        }
+
+        const margineClass = v.utile_reale_netto >= 0 ? 'text-success' : 'text-danger';
+        
+        return `
+          <tr>
+            <td><span class="badge badge-${v.stato_vendita.toLowerCase()}">${v.stato_vendita}</span></td>
+            <td><strong>${v.marca} ${v.modello}</strong><br><small>${v.targa || 'N/D'}</small></td>
+            <td>€ ${v.prezzo_acquisto.toFixed(2)}</td>
+            <td>€ ${v.totale_costi_ripristino.toFixed(2)}</td>
+            <td><strong>€ ${v.costo_totale_investito.toFixed(2)}</strong></td>
+            <td>€ ${v.prezzo_vendita_reale.toFixed(2)}</td>
+            <td class="${margineClass}">€ ${v.utile_reale_netto.toFixed(2)}</td>
+          </tr>
+        `;
+      }).join('');
     }
 
-    // Caricamento iniziale
-    caricaClienti();
+    // --- ESPORTAZIONE EXCEL PER COMMERCIALISTA ---
+    async function esportaPrimaNotaExcel() {
+      const mese = document.getElementById('exp-mese').value;
+      const anno = document.getElementById('exp-anno').value;
+
+      const dataInizio = `${anno}-${String(mese).padStart(2, '0')}-01`;
+      const dataFine = new Date(anno, mese, 0).toISOString().split('T')[0];
+
+      const { data, error } = await supabaseClient
+        .from('vista_prima_nota_commercialista')
+        .select('*')
+        .gte('data_operazione', dataInizio)
+        .lte('data_operazione', dataFine)
+        .order('data_operazione', { ascending: true });
+
+      if (error || !data || data.length === 0) {
+        alert('Nessun movimento trovato per il mese selezionato.');
+        return;
+      }
+
+      let csvContent = "\uFEFF";
+      csvContent += "Data Operazione;Tipo Movimento;Descrizione Dettagliata;Cliente/Fornitore;CF/P.IVA;Importo Dichiarato (€);Importo Reale Incassato (€);Spese Ripristino (€);Margine Netto (€)\n";
+
+      data.forEach(row => {
+        csvContent += `"${row.data_operazione}";"${row.tipo_movimento}";"${row.descrizione_dettagliata}";"${row.cliente_fornitore || ''}";"${row.codice_fiscale_piva || ''}";"${row.importo_dichiarato_fattura}";"${row.importo_reale_incassato}";"${row.totale_spese_veicolo}";"${row.margine_netto}"\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Prima_Nota_Commercialista_${anno}_${String(mese).padStart(2, '0')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   </script>
 </body>
 </html>
